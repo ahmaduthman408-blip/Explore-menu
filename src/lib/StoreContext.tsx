@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { PRODUCTS, Product as DefaultProduct } from "../data/products";
+import { getSupabase } from "./supabase";
 
 export interface DashboardProduct extends DefaultProduct {
   videoUrl?: string; // YouTube or Drive link
@@ -83,12 +84,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const [settings, setSettings] = useState<Settings>(() => {
     const saved = localStorage.getItem("admin_settings");
-    return saved ? JSON.parse(saved) : {
-      websiteName: "EXPLORE MENU",
-      logo: "",
-      ourStory: "Welcome to our store. We provide the best fragrance experiences.",
-      supabaseUrl: "",
-      supabaseAnonKey: "",
+    const parsed = saved ? JSON.parse(saved) : {};
+    return {
+      websiteName: parsed.websiteName || "EXPLORE MENU",
+      logo: parsed.logo || "",
+      ourStory: parsed.ourStory || "Welcome to our store. We provide the best fragrance experiences.",
+      supabaseUrl: parsed.supabaseUrl || "https://xwfxpjwcqddavwzsfoct.supabase.co/rest/v1/",
+      supabaseAnonKey: parsed.supabaseAnonKey || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3ZnhwandjcWRkYXZ3enNmb2N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MTcyODAsImV4cCI6MjA5MzI5MzI4MH0.YoUeWmP6BFjyi5mSj2zmIUZ3foqnqmJ1BXBonMVWEac",
     };
   });
 
@@ -111,6 +113,38 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     localStorage.setItem("admin_settings", JSON.stringify(settings));
   }, [settings]);
+
+  useEffect(() => {
+    const fetchSupabaseData = async () => {
+      const supa = getSupabase(settings.supabaseUrl, settings.supabaseAnonKey);
+      if (!supa) return;
+
+      try {
+        const { data: dbProducts, error } = await supa.from('products').select('*');
+        if (!error && dbProducts && dbProducts.length > 0) {
+          const formattedProducts = dbProducts.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            price: Number(p.price),
+            description: p.description,
+            volume: p.volume,
+            notes: p.notes || [],
+            images: p.images || [],
+            videoUrl: p.video_url || '',
+            category: p.category || 'Unisex',
+            stockLeft: p.stock_left,
+            tags: p.tags || [],
+            urgencyType: p.urgency_type
+          }));
+          setProducts(formattedProducts);
+        }
+      } catch (err) {
+        console.error("Failed fetching products from supabase", err);
+      }
+    };
+
+    fetchSupabaseData();
+  }, [settings.supabaseUrl, settings.supabaseAnonKey]);
 
   return (
     <StoreContext.Provider value={{

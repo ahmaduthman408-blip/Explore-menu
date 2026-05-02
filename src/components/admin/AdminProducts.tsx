@@ -1,9 +1,10 @@
 import React, { useState, useRef } from "react";
 import { DashboardProduct, useStore } from "../../lib/StoreContext";
+import { getSupabase } from "../../lib/supabase";
 import { Plus, Edit2, Trash2, X, Image as ImageIcon, Video, UploadCloud } from "lucide-react";
 
 export function AdminProducts() {
-  const { products, setProducts } = useStore();
+  const { products, setProducts, settings } = useStore();
   const [isEditing, setIsEditing] = useState(false);
   const [currentProduct, setCurrentProduct] = useState<Partial<DashboardProduct>>({});
   const [productToDelete, setProductToDelete] = useState<string | number | null>(null);
@@ -20,9 +21,11 @@ export function AdminProducts() {
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentProduct.name || !currentProduct.price) return;
+
+    let finalProduct = { ...currentProduct };
 
     if (currentProduct.id) {
       // Update
@@ -43,19 +46,54 @@ export function AdminProducts() {
         stockLeft: 100,
         tags: ["New"]
       };
+      finalProduct = newProduct;
       setProducts(prev => [...prev, newProduct]);
     }
+    
     setIsEditing(false);
     setCurrentProduct({});
+
+    // Supabase Sync
+    try {
+      const supa = getSupabase(settings.supabaseUrl, settings.supabaseAnonKey);
+      if (supa) {
+        await supa.from('products').upsert([{
+          id: finalProduct.id && typeof finalProduct.id !== 'string' ? String(finalProduct.id) : (finalProduct.id || Date.now().toString()),
+          name: finalProduct.name,
+          price: finalProduct.price,
+          description: finalProduct.description,
+          volume: finalProduct.volume,
+          notes: finalProduct.notes,
+          images: finalProduct.images || [],
+          video_url: finalProduct.videoUrl || null,
+          category: finalProduct.category,
+          stock_left: finalProduct.stockLeft,
+          tags: finalProduct.tags || [],
+          urgency_type: finalProduct.urgencyType || null
+        }]);
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleDelete = (id: string | number) => {
     setProductToDelete(id);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (productToDelete !== null) {
       setProducts(prev => prev.filter(p => p.id !== productToDelete));
+      
+      try {
+        const supa = getSupabase(settings.supabaseUrl, settings.supabaseAnonKey);
+        if (supa) {
+          await supa.from('products').delete().eq('id', typeof productToDelete !== 'string' ? String(productToDelete) : productToDelete);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+
       setProductToDelete(null);
     }
   };

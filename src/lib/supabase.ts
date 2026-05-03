@@ -1,29 +1,7 @@
-/// <reference types="vite/client" />
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 
-let supabaseInstance: SupabaseClient | null = null;
-let currentUrl: string | null = null;
-let currentKey: string | null = null;
+const supabaseUrl = 'https://xwfxpjwcqddavwzsfoct.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3ZnhwandjcWRkYXZ3enNmb2N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MTcyODAsImV4cCI6MjA5MzI5MzI4MH0.YoUeWmP6BFjyi5mSj2zmIUZ3foqnqmJ1BXBonMVWEac';
 
-export const getSupabase = (url?: string, key?: string): SupabaseClient | null => {
-  const finalUrl = url || import.meta.env.VITE_SUPABASE_URL;
-  const finalKey = key || import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-  if (!finalUrl || !finalKey) {
-    return null;
-  }
-
-  // Trim any /rest/v1 or trailing slashes that users might paste by accident
-  const cleanUrl = finalUrl.replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
-
-  if (supabaseInstance && currentUrl === cleanUrl && currentKey === finalKey) {
-    return supabaseInstance;
-  }
-
-  currentUrl = cleanUrl;
-  currentKey = finalKey;
-  supabaseInstance = createClient(cleanUrl, finalKey);
-
-  return supabaseInstance;
-};
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 

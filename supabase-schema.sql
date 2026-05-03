@@ -66,7 +66,8 @@ VALUES (
 )
 ON CONFLICT (id) DO NOTHING;
 
--- Row Level Security (RLS) Policies (Optional but recommended)
+-- Row Level Security (RLS) Policies
+
 -- Enable RLS on all tables
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
@@ -75,11 +76,16 @@ ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 
 -- Allow public read access to products, reviews, and settings
-CREATE POLICY "Public products are viewable by everyone" ON public.products FOR SELECT USING (true);
+CREATE POLICY "public read" ON public.products FOR SELECT USING (true);
 CREATE POLICY "Public reviews are viewable by everyone" ON public.reviews FOR SELECT USING (true);
 CREATE POLICY "Public settings are viewable by everyone" ON public.settings FOR SELECT USING (true);
 
--- (Requires authenticated roles for insert/update/delete. To allow anonymous inserts during dev, change 'false' to 'true')
+-- Allow public insert on products (as requested)
+CREATE POLICY "public insert" ON public.products FOR INSERT WITH CHECK (true);
+CREATE POLICY "public update" ON public.products FOR UPDATE USING (true);
+CREATE POLICY "public delete" ON public.products FOR DELETE USING (true);
+
+-- Admin access (placeholder roles for full access, usually you'd check auth.uid())
 CREATE POLICY "Admin full access products" ON public.products FOR ALL USING (true);
 CREATE POLICY "Admin full access orders" ON public.orders FOR ALL USING (true);
 CREATE POLICY "Admin full access reviews" ON public.reviews FOR ALL USING (true);

@@ -24,19 +24,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  useEffect(() => {
-    const stored = localStorage.getItem("explore_menu_cart");
-    if (stored) {
-      try {
-        setItems(JSON.parse(stored));
-      } catch (e) {}
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("explore_menu_cart", JSON.stringify(items));
-  }, [items]);
-
   const addToCart = (product: Product, quantity: number = 1) => {
     setItems((prev) => {
       const existing = prev.find((i) => i.product.id === product.id);

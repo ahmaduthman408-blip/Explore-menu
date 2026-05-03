@@ -4,12 +4,11 @@ import { useStore } from "../../lib/StoreContext";
 export function AdminSettings() {
   const { settings, setSettings } = useStore();
   const [formData, setFormData] = useState(settings);
-  const [password, setPassword] = useState(localStorage.getItem("admin_password") || "Abu Nasir 123");
+  const [password, setPassword] = useState("Abu Nasir 123");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSettings(formData);
-    localStorage.setItem("admin_password", password);
     alert("Settings updated successfully!");
   };
 

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { DashboardProduct, useStore } from "../../lib/StoreContext";
-import { getSupabase } from "../../lib/supabase";
+import { supabase } from "../../lib/supabase";
 import { Plus, Edit2, Trash2, X, Image as ImageIcon, Video, UploadCloud } from "lucide-react";
 
 export function AdminProducts() {
@@ -34,7 +34,7 @@ export function AdminProducts() {
       // Add new
       const newProduct: DashboardProduct = {
         ...currentProduct,
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         name: currentProduct.name || "",
         price: Number(currentProduct.price) || 0,
         description: currentProduct.description || "",
@@ -55,22 +55,19 @@ export function AdminProducts() {
 
     // Supabase Sync
     try {
-      const supa = getSupabase(settings.supabaseUrl, settings.supabaseAnonKey);
-      if (supa) {
-        await supa.from('products').upsert([{
-          id: finalProduct.id && typeof finalProduct.id !== 'string' ? String(finalProduct.id) : (finalProduct.id || Date.now().toString()),
-          name: finalProduct.name,
-          price: finalProduct.price,
-          description: finalProduct.description,
-          volume: finalProduct.volume,
-          notes: finalProduct.notes,
-          images: finalProduct.images || [],
-          video_url: finalProduct.videoUrl || null,
-          category: finalProduct.category,
-          stock_left: finalProduct.stockLeft,
-          tags: finalProduct.tags || [],
-          urgency_type: finalProduct.urgencyType || null
-        }]);
+      const dbProduct = {
+        name: finalProduct.name,
+        price: finalProduct.price,
+        description: finalProduct.description,
+        image: finalProduct.images && finalProduct.images.length > 0 ? finalProduct.images[0] : ''
+      };
+      
+      if (currentProduct.id) {
+        // Update existing using exactly the id provided
+        await supabase.from('products').update(dbProduct).eq('id', currentProduct.id);
+      } else {
+        // Insert new product - supply the generated UUID and created_at
+        await supabase.from('products').insert([{ ...dbProduct, id: finalProduct.id, created_at: new Date().toISOString() }]);
       }
     } catch (e) {
       console.error(e);
@@ -86,10 +83,7 @@ export function AdminProducts() {
       setProducts(prev => prev.filter(p => p.id !== productToDelete));
       
       try {
-        const supa = getSupabase(settings.supabaseUrl, settings.supabaseAnonKey);
-        if (supa) {
-          await supa.from('products').delete().eq('id', typeof productToDelete !== 'string' ? String(productToDelete) : productToDelete);
-        }
+        await supabase.from('products').delete().eq('id', typeof productToDelete !== 'string' ? String(productToDelete) : productToDelete);
       } catch (e) {
         console.error(e);
       }
@@ -97,6 +91,7 @@ export function AdminProducts() {
       setProductToDelete(null);
     }
   };
+
 
   const openEditor = (product?: DashboardProduct) => {
     if (product) {

@@ -32,16 +32,17 @@ export function AdminProducts() {
 
     const newProductState: DashboardProduct = {
       id: productId,
-      name: currentProduct.name,
-      price: currentProduct.price,
+      name: currentProduct.name || "Untitled",
+      price: currentProduct.price || 0,
+      originalPrice: currentProduct.originalPrice || currentProduct.price || 0,
       description: currentProduct.description || "",
       images: currentProduct.images && currentProduct.images.length > 0 ? currentProduct.images : [''],
-      volume: currentProduct.volume || '100ml',
-      notes: currentProduct.notes || [],
       videoUrl: currentProduct.videoUrl || '',
-      category: currentProduct.category || 'Unisex',
       stockLeft: currentProduct.stockLeft || 10,
-      tags: currentProduct.tags || []
+      tags: currentProduct.tags || [],
+      rating: currentProduct.rating || 5,
+      reviews: currentProduct.reviews || 0,
+      urgencyType: currentProduct.urgencyType || null
     };
 
     if (currentProduct.id) {

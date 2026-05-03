@@ -55,7 +55,16 @@ interface StoreContextType {
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [products, setProducts] = useState<DashboardProduct[]>([]);
+  const [products, setProducts] = useState<DashboardProduct[]>(() => {
+    const saved = localStorage.getItem("admin_products");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    return PRODUCTS as DashboardProduct[];
+  });
 
   const [orders, setOrders] = useState<Order[]>(() => {
     const saved = localStorage.getItem("admin_orders");
@@ -119,10 +128,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             id: p.id,
             name: p.name,
             price: Number(p.price),
+            originalPrice: Number(p.price) * 1.2,
             description: p.description,
             images: p.image ? [p.image] : [],
             videoUrl: '',
-            category: 'Unisex',
+            rating: 5,
+            reviews: 0,
+            urgencyType: null,
             stockLeft: 10,
             tags: []
           });

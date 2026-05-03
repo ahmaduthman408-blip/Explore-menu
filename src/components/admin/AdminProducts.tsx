@@ -60,12 +60,22 @@ export function AdminProducts() {
         image: currentProduct.images && currentProduct.images.length > 0 ? currentProduct.images[0] : ''
       };
       
+      let error = null;
       if (currentProduct.id) {
         // Update existing using exactly the id provided
-        await supabase.from('products').update(dbProduct).eq('id', currentProduct.id);
+        const res = await supabase.from('products').update(dbProduct).eq('id', currentProduct.id);
+        error = res.error;
       } else {
         // Insert new product
-        await supabase.from('products').insert([{ ...dbProduct, id: productId, created_at: new Date().toISOString() }]);
+        const res = await supabase.from('products').insert([{ ...dbProduct, id: productId, created_at: new Date().toISOString() }]);
+        error = res.error;
+      }
+
+      if (error) {
+        console.error("Supabase Save Error:", error);
+        alert(`Failed to save to database: ${error.message} (Is Row-Level Security enabled on Supabase?)`);
+        // Revert local state
+        setProducts(prev => prev.filter(p => p.id !== productId));
       }
     } catch (e) {
       console.error("Save error:", e);
@@ -80,8 +90,18 @@ export function AdminProducts() {
 
   const confirmDelete = async () => {
     if (productToDelete !== null) {
+      const productToRemove = products.find(p => String(p.id) === String(productToDelete));
+      setProducts(prev => prev.filter(p => String(p.id) !== String(productToDelete)));
       try {
-        await supabase.from('products').delete().eq('id', typeof productToDelete !== 'string' ? String(productToDelete) : productToDelete);
+        const { error } = await supabase.from('products').delete().eq('id', productToDelete);
+        if (error) {
+           console.error("Supabase Delete Error:", error);
+           alert(`Failed to delete from database: ${error.message} (Is Row-Level Security enabled on Supabase?)`);
+           // Revert local state
+           if (productToRemove) {
+             setProducts(prev => [...prev, productToRemove]);
+           }
+        }
       } catch (e) {
         console.error("Delete error:", e);
       }

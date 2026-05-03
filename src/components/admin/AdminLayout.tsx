@@ -17,16 +17,20 @@ export function AdminLayout() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Relying strictly on React state, removed local storage entirely per instructions.
-    if (isAuthenticated && location.pathname === "/admin") {
-      navigate("/admin/dashboard");
+    const auth = localStorage.getItem("admin_authenticated");
+    if (auth === "true") {
+      setIsAuthenticated(true);
+      if (location.pathname === "/admin") {
+        navigate("/admin/dashboard");
+      }
     }
-  }, [location.pathname, navigate, isAuthenticated]);
+  }, [location.pathname, navigate]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    const currentAdminPassword = "Abu Nasir 123";
+    const currentAdminPassword = localStorage.getItem("admin_password") || "Abu Nasir 123";
     if (password === currentAdminPassword) {
+      localStorage.setItem("admin_authenticated", "true");
       setIsAuthenticated(true);
       navigate("/admin/dashboard");
     } else {
@@ -35,6 +39,7 @@ export function AdminLayout() {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem("admin_authenticated");
     setIsAuthenticated(false);
     navigate("/admin");
   };

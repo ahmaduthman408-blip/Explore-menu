@@ -1,93 +1,32 @@
--- Supabase SQL Schema for Admin Dashboard
-
--- 1. Products Table
-CREATE TABLE public.products (
-  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  name TEXT NOT NULL,
-  price NUMERIC NOT NULL,
-  description TEXT,
-  volume TEXT,
-  notes TEXT[] DEFAULT '{}',
-  images TEXT[] DEFAULT '{}',
-  video_url TEXT,
-  category TEXT,
-  stock_left INTEGER DEFAULT 100,
-  tags TEXT[] DEFAULT '{}',
-  urgency_type TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- Run this in your Supabase SQL Editor:
+  
+CREATE TABLE IF NOT EXISTS public.products (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  price numeric NOT NULL,
+  image text,
+  description text,
+  created_at timestamp with time zone DEFAULT now()
 );
 
--- 2. Orders Table
-CREATE TABLE public.orders (
-  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  customer_name TEXT NOT NULL,
-  email TEXT NOT NULL,
-  total NUMERIC NOT NULL,
-  status TEXT NOT NULL CHECK (status IN ('Pending', 'Processing', 'Shipped', 'Delivered')) DEFAULT 'Pending',
-  date TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- 3. Reviews Table
-CREATE TABLE public.reviews (
-  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  customer_name TEXT NOT NULL,
-  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
-  comment TEXT,
-  date TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- 4. Customers Table
-CREATE TABLE public.customers (
-  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  name TEXT NOT NULL,
-  email TEXT NOT NULL UNIQUE,
-  orders_count INTEGER DEFAULT 0,
-  total_spent NUMERIC DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- 5. Settings Table (Enforced as a single row)
-CREATE TABLE public.settings (
-  id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
-  website_name TEXT NOT NULL DEFAULT 'EXPLORE MENU',
-  logo TEXT DEFAULT '',
-  our_story TEXT DEFAULT 'Welcome to our store. We provide the best fragrance experiences.',
-  admin_password TEXT NOT NULL DEFAULT 'Abu Nasir 123'
-);
-
--- Insert initial default settings
-INSERT INTO public.settings (id, website_name, logo, our_story, admin_password) 
-VALUES (
-  1, 
-  'EXPLORE MENU', 
-  '', 
-  'Welcome to our store. We provide the best fragrance experiences.', 
-  'Abu Nasir 123'
-)
-ON CONFLICT (id) DO NOTHING;
-
--- Row Level Security (RLS) Policies
-
--- Enable RLS on all tables
+-- Enable Row Level Security
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 
--- Allow public read access to products, reviews, and settings
-CREATE POLICY "public read" ON public.products FOR SELECT USING (true);
-CREATE POLICY "Public reviews are viewable by everyone" ON public.reviews FOR SELECT USING (true);
-CREATE POLICY "Public settings are viewable by everyone" ON public.settings FOR SELECT USING (true);
+-- Allow public read
+CREATE POLICY "Allow public read"
+ON products FOR SELECT
+USING (true);
 
--- Allow public insert on products (as requested)
-CREATE POLICY "public insert" ON public.products FOR INSERT WITH CHECK (true);
-CREATE POLICY "public update" ON public.products FOR UPDATE USING (true);
-CREATE POLICY "public delete" ON public.products FOR DELETE USING (true);
+-- Allow public insert
+CREATE POLICY "Allow public insert"
+ON products FOR INSERT
+WITH CHECK (true);
 
--- Admin access (placeholder roles for full access, usually you'd check auth.uid())
-CREATE POLICY "Admin full access products" ON public.products FOR ALL USING (true);
-CREATE POLICY "Admin full access orders" ON public.orders FOR ALL USING (true);
-CREATE POLICY "Admin full access reviews" ON public.reviews FOR ALL USING (true);
-CREATE POLICY "Admin full access customers" ON public.customers FOR ALL USING (true);
-CREATE POLICY "Admin full access settings" ON public.settings FOR ALL USING (true);
+-- Allow public update and delete for admin panel features
+CREATE POLICY "Allow public update" 
+ON products FOR UPDATE 
+USING (true);
+
+CREATE POLICY "Allow public delete" 
+ON products FOR DELETE 
+USING (true);

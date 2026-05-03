@@ -25,53 +25,52 @@ export function AdminProducts() {
     e.preventDefault();
     if (!currentProduct.name || !currentProduct.price) return;
 
-    let finalProduct = { ...currentProduct };
+    setIsEditing(false);
+    
+    // Generate an ID if this is a new product
+    const productId = currentProduct.id || crypto.randomUUID();
+
+    const newProductState: DashboardProduct = {
+      id: productId,
+      name: currentProduct.name,
+      price: currentProduct.price,
+      description: currentProduct.description || "",
+      images: currentProduct.images && currentProduct.images.length > 0 ? currentProduct.images : [''],
+      volume: currentProduct.volume || '100ml',
+      notes: currentProduct.notes || [],
+      videoUrl: currentProduct.videoUrl || '',
+      category: currentProduct.category || 'Unisex',
+      stockLeft: currentProduct.stockLeft || 10,
+      tags: currentProduct.tags || []
+    };
 
     if (currentProduct.id) {
-      // Update
-      setProducts(prev => prev.map(p => p.id === currentProduct.id ? { ...p, ...currentProduct } as DashboardProduct : p));
+      setProducts(prev => prev.map(p => p.id === currentProduct.id ? newProductState : p));
     } else {
-      // Add new
-      const newProduct: DashboardProduct = {
-        ...currentProduct,
-        id: crypto.randomUUID(),
-        name: currentProduct.name || "",
-        price: Number(currentProduct.price) || 0,
-        description: currentProduct.description || "",
-        volume: currentProduct.volume || "100ml",
-        notes: currentProduct.notes || [],
-        images: currentProduct.images && currentProduct.images[0] ? currentProduct.images : ["https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&q=80"],
-        videoUrl: currentProduct.videoUrl || "",
-        category: currentProduct.category || "Unisex",
-        stockLeft: 100,
-        tags: ["New"]
-      };
-      finalProduct = newProduct;
-      setProducts(prev => [...prev, newProduct]);
+      setProducts(prev => [...prev, newProductState]);
     }
-    
-    setIsEditing(false);
-    setCurrentProduct({});
 
     // Supabase Sync
     try {
       const dbProduct = {
-        name: finalProduct.name,
-        price: finalProduct.price,
-        description: finalProduct.description,
-        image: finalProduct.images && finalProduct.images.length > 0 ? finalProduct.images[0] : ''
+        name: currentProduct.name,
+        price: currentProduct.price,
+        description: currentProduct.description || "",
+        image: currentProduct.images && currentProduct.images.length > 0 ? currentProduct.images[0] : ''
       };
       
       if (currentProduct.id) {
         // Update existing using exactly the id provided
         await supabase.from('products').update(dbProduct).eq('id', currentProduct.id);
       } else {
-        // Insert new product - supply the generated UUID and created_at
-        await supabase.from('products').insert([{ ...dbProduct, id: finalProduct.id, created_at: new Date().toISOString() }]);
+        // Insert new product
+        await supabase.from('products').insert([{ ...dbProduct, id: productId, created_at: new Date().toISOString() }]);
       }
     } catch (e) {
-      console.error(e);
+      console.error("Save error:", e);
     }
+    
+    setCurrentProduct({});
   };
 
   const handleDelete = (id: string | number) => {
@@ -80,14 +79,11 @@ export function AdminProducts() {
 
   const confirmDelete = async () => {
     if (productToDelete !== null) {
-      setProducts(prev => prev.filter(p => p.id !== productToDelete));
-      
       try {
         await supabase.from('products').delete().eq('id', typeof productToDelete !== 'string' ? String(productToDelete) : productToDelete);
       } catch (e) {
-        console.error(e);
+        console.error("Delete error:", e);
       }
-
       setProductToDelete(null);
     }
   };
